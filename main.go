@@ -70,8 +70,8 @@ func (alertFile AlertFile) Override(overrideRule Rule) {
 	for i, group := range alertFile.Groups {
 		for j, rule := range group.Rules {
 
-			// Skip if the rule is the same
-			if rule.AlertName == overrideRule.AlertName || rule.AlertName == "" {
+			// Skip if the rule is the same and override rules itself
+			if rule.AlertName == overrideRule.AlertName || rule.AlertName == "" || len(rule.OverrideRules) > 0 {
 				continue
 			}
 
