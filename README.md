@@ -23,41 +23,13 @@ groups:
 
 Only alert rules are altered, recording rules are left intact and are just passed to output without change.
 
-## Ansible
 
+Running the program
 ```
-- name: Override default rules
-  become: false
-  delegate_to: localhost
-  prometheus_merge:
-    rulesPath: "/tmp/alerting_rules"
-  register: override
-
-- name: Copy rules to files
-  become: false
-  delegate_to: localhost
-  copy:
-    content: "{{ override.alerts }}"
-    dest: "/tmp/processed_rules.rules"
-```
-
-## Dev/Testing
-
-The application expects JSON file as it's input.
-
-config.json
-```
-{
-  "rulesPath": "./rules"
-}
-```
-
-```
-go run main.go config.json
+./prometheus_merget <path_to_rules>
 ```
 
 ## Build
-
 ```
 CGO_ENABLED=0 GOOS=linux go build -o prometheus_alert_overrider main.go
 ```

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -11,17 +10,6 @@ import (
 
 	"gopkg.in/yaml.v2"
 )
-
-type ModuleArgs struct {
-	RulesPath string
-}
-
-type Response struct {
-	Msg     string `json:"msg"`
-	Alerts  string `json:"alerts"`
-	Changed bool   `json:"changed"`
-	Failed  bool   `json:"failed"`
-}
 
 type AlertFile struct {
 	Groups []Group `yaml:"groups,omitempty"`
@@ -87,15 +75,6 @@ func (alertFile AlertFile) Override(overrideRule Rule) {
 	}
 }
 
-func ExitJson(responseBody Response) {
-	returnResponse(responseBody)
-}
-
-func failJson(responseBody Response) {
-	responseBody.Failed = true
-	returnResponse(responseBody)
-}
-
 func LoadRules(input []byte) (*AlertFile, error) {
 	var alertRules AlertFile
 	err := yaml.Unmarshal(input, &alertRules)
@@ -109,21 +88,6 @@ func LoadRules(input []byte) (*AlertFile, error) {
 func containsOperator(needle string, haystack string) bool {
 	result, _ := regexp.MatchString(needle, haystack)
 	return result
-}
-
-func returnResponse(responseBody Response) {
-	var response []byte
-	var err error
-	response, err = json.Marshal(responseBody)
-	if err != nil {
-		response, _ = json.Marshal(Response{Msg: "Invalid response object"})
-	}
-	fmt.Println(string(response))
-	if responseBody.Failed {
-		os.Exit(1)
-	} else {
-		os.Exit(0)
-	}
 }
 
 func extractFilterExpressions(input string) string {
@@ -175,7 +139,7 @@ func NegateFilterExpression(input string) string {
 	return strings.Join(exprFilterBodyElements[:], ",")
 }
 
-func getFilePaths(rootPath string, response Response) []string {
+func getFilePaths(rootPath string) []string {
 	var filePaths []string
 
 	files, err := ioutil.ReadDir(rootPath)
@@ -189,11 +153,10 @@ func getFilePaths(rootPath string, response Response) []string {
 	return filePaths
 }
 
-func loadAlertFile(filePath string, response Response) *AlertFile {
+func loadAlertFile(filePath string) *AlertFile {
 	input, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		response.Msg = "Failed to read file " + filePath
-		failJson(response)
+		fmt.Errorf("Failed to read file " + filePath)
 		return nil
 	}
 	alertFile, err := LoadRules(input)
@@ -204,34 +167,18 @@ func loadAlertFile(filePath string, response Response) *AlertFile {
 }
 
 func main() {
-	var response Response
 
 	if len(os.Args) != 2 {
-		response.Msg = "No argument file provided"
-		failJson(response)
+		panic("No arguments provided")
 	}
 
-	argsFile := os.Args[1]
-
-	text, err := ioutil.ReadFile(argsFile)
-	if err != nil {
-		response.Msg = "Could not read configuration file: " + argsFile
-		failJson(response)
-	}
-
-	var moduleArgs ModuleArgs
-	err = json.Unmarshal(text, &moduleArgs)
-	if err != nil {
-		response.Msg = "Configuration file not valid JSON: " + argsFile
-		failJson(response)
-	}
-
-	files := getFilePaths(moduleArgs.RulesPath, response)
+	filePaths := os.Args[1]
+	files := getFilePaths(filePaths)
 
 	var alertFiles []AlertFile
 
 	for _, file := range files {
-		alertFile := loadAlertFile(file, response)
+		alertFile := loadAlertFile(file)
 		if alertFile != nil {
 			alertFiles = append(alertFiles, *alertFile)
 		}
@@ -250,7 +197,5 @@ func main() {
 		}
 	}
 
-	response.Msg = "done"
-	response.Alerts = alertFile.Exporter()
-	ExitJson(response)
+	fmt.Print(alertFile.Exporter())
 }
