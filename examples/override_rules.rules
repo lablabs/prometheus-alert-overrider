@@ -1,0 +1,31 @@
+groups:
+- name: k8s-node
+  rules:
+  - alert: K8SNodeCPUUtilization
+    expr: |
+      K8SNodeCPUUtilization > 90
+    for: 5m
+    labels:
+      group: system
+      severity: high
+    annotations:
+      identifier: "{{ $labels.kubernetes_cluster }}/{{ $labels.instance_name }}"
+      msg: "Node CPU ultilization by containers has been over 90% for more than 5m."
+      reason: "Node CPU ultilization by containers is high. Recalculate CPU request and limits."
+      value: "{{ printf \"%.2f\" $value }}%"
+
+# Disables both rules above
+- name: k8s-workload-container-overrides
+  rules:
+  - alert: K8SNodeCPUUtilizationDev
+    expr: |
+      K8SNodeCPUUtilization{kubernetes_cluster="kube-dev"} > 90
+    for: 1h
+    labels:
+      group: system
+      severity: warning
+    annotations:
+      identifier: "{{ $labels.kubernetes_cluster }}/{{ $labels.instance_name }}"
+      msg: "Node CPU ultilization by containers has been over 90% for more than 1h."
+      reason: "Node CPU ultilization by containers is high. Recalculate CPU request and limits."
+      value: "{{ printf \"%.2f\" $value }}%"

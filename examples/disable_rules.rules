@@ -1,0 +1,38 @@
+groups:
+- name: k8s-node
+  rules:
+  - alert: K8SNodeCPUUtilization
+    expr: |
+      K8SNodeCPUUtilization > 90
+    for: 5m
+    labels:
+      group: system
+      severity: high
+    annotations:
+      identifier: "{{ $labels.kubernetes_cluster }}/{{ $labels.instance_name }}"
+      msg: "Node CPU ultilization by containers has been over 90% for more than 5m."
+      reason: "Node CPU ultilization by containers is high. Recalculate CPU request and limits."
+      value: "{{ printf \"%.2f\" $value }}%"
+
+  - alert: K8SNodeMemoryUtilization
+    expr: |
+      K8SNodeMemoryUtilization > 90
+    for: 5m
+    labels:
+      group: system
+      severity: high
+    annotations:
+      identifier: "{{ $labels.kubernetes_cluster }}/{{ $labels.instance_name }}"
+      msg: "Node memory ultilization by containers has been over 90% for more than 5m."
+      reason: "Node memory ultilization by containers is high. Recalculate Memory request and limits."
+      value: "{{ printf \"%.2f\" $value }}%"
+
+# Disables both rules above
+- name: k8s-workload-container-overrides
+  rules:
+  - alert: DisableKubeDev
+    override: ["K8S.*"] # List of rules to be overriden, accepts regexp
+    # If set to false, only default rules are changes and no new rules are created
+    enabled: false
+    # This expresion will be negated and inserted into all rules matching the values in ovveride. If enabled is set to true, use this field to define query for new rule. Only filters will be negated and inserted into default rules
+    expr: '{kubernetes_cluster="kube-dev"}'
