@@ -40,6 +40,8 @@ groups:
 
 The glob matching rules are per Go's [filepath.Glob](https://pkg.go.dev/path/filepath#Glob). (Note that you may need to quote the globs to prevent your shell expanding them first.)
 
+**Note that the default behaviour has changed** - if `prometheus_merge` no longer produces output, you may need to change your folder paths to be globs (for example, `alerts/` to `alerts/*`).
+
 The output is printed to stdout.
 
 ### Ansible integration
