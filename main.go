@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -139,15 +140,21 @@ func NegateFilterExpression(input string) string {
 	return strings.Join(exprFilterBodyElements[:], ",")
 }
 
-func getFilePaths(rootPath string) []string {
+func getFilePaths(globs []string) []string {
 	var filePaths []string
 
-	files, err := ioutil.ReadDir(rootPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, f := range files {
-		filePaths = append(filePaths, rootPath+"/"+f.Name())
+	for _, root := range globs {
+		files, err := filepath.Glob(root)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, f := range files {
+			abspath, err := filepath.Abs(f)
+			if err != nil {
+				log.Fatal(err)
+			}
+			filePaths = append(filePaths, abspath)
+		}
 	}
 
 	return filePaths
@@ -168,12 +175,11 @@ func loadAlertFile(filePath string) *AlertFile {
 
 func main() {
 
-	if len(os.Args) != 2 {
+	if len(os.Args) < 2 {
 		panic("No arguments provided")
 	}
 
-	filePaths := os.Args[1]
-	files := getFilePaths(filePaths)
+	files := getFilePaths(os.Args[1:])
 
 	var alertFiles []AlertFile
 
