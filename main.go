@@ -140,16 +140,20 @@ func NegateFilterExpression(input string) string {
 	return strings.Join(exprFilterBodyElements[:], ",")
 }
 
-func getFilePaths(roots []string) []string {
+func getFilePaths(globs []string) []string {
 	var filePaths []string
 
-	for _, root := range roots {
-		files, err := ioutil.ReadDir(root)
+	for _, root := range globs {
+		files, err := filepath.Glob(root)
 		if err != nil {
 			log.Fatal(err)
 		}
 		for _, f := range files {
-			filePaths = append(filePaths, root+string(filepath.Separator)+f.Name())
+			abspath, err := filepath.Abs(f)
+			if err != nil {
+				log.Fatal(err)
+			}
+			filePaths = append(filePaths, abspath)
 		}
 	}
 

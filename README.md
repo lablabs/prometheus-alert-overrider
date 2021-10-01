@@ -14,7 +14,7 @@ The program loops over all of the alerting rules until it finds an override rule
 
 # Usage
 
-The application loads all of the valid files from the specified directories and applies overrides if they are defined.
+The application loads all of the valid files matching the specified globs and applies overrides if they are defined.
 
 For examples look at `examples` directory.
 
@@ -35,8 +35,10 @@ groups:
 ## Running the program
 
 ```
-./prometheus_merge <path_to_rules> [<path_to_more_rules>]
+./prometheus_merge <glob> [<glob>]
 ```
+
+The glob matching rules are per Go's [filepath.Glob](https://pkg.go.dev/path/filepath#Glob). (Note that you may need to quote the globs to prevent your shell expanding them first.)
 
 The output is printed to stdout.
 
