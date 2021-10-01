@@ -14,7 +14,7 @@ The program loops over all of the alerting rules until it finds an override rule
 
 # Usage
 
-The application loads all of the valid files from specified directory and applies overrides if they are defined.
+The application loads all of the valid files from the specified directories and applies overrides if they are defined.
 
 For examples look at `examples` directory.
 
@@ -35,7 +35,7 @@ groups:
 ## Running the program
 
 ```
-./prometheus_merge <path_to_rules>
+./prometheus_merge <path_to_rules> [<path_to_more_rules>]
 ```
 
 The output is printed to stdout.
