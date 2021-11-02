@@ -1,0 +1,12 @@
+groups:
+- name: DisableRuleEntirely
+  rules:
+  - alert: TestDisabled
+    expr: test_metric{some_label="test_value"} > 1
+    for: 5m
+
+- name: Overrides
+  rules:
+  - alert: Disable
+    override: [TestDisabled]
+    enabled: false

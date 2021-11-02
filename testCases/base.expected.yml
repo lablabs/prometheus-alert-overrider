@@ -1,0 +1,15 @@
+groups:
+- name: k8s-node
+  rules:
+  - alert: K8SNodeCPUUtilization
+    expr: K8SNodeCPUUtilization{kubernetes_cluster!="kube-dev"} > 90
+    for: 5m
+    labels:
+      group: system
+      severity: high
+    annotations:
+      identifier: '{{ $labels.kubernetes_cluster }}/{{ $labels.instance_name }}'
+      msg: Node CPU ultilization by containers has been over 90% for more than 5m.
+      reason: Node CPU ultilization by containers is high. Recalculate CPU request
+        and limits.
+      value: '{{ printf "%.2f" $value }}%'
