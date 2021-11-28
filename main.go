@@ -37,14 +37,27 @@ func (rules *AlertFile) Exporter() string {
 
 	// Remove override parameters for exporting purposes
 	for i, group := range rules.Groups {
+		var removedRules int
 		for j, rule := range group.Rules {
 			if rule.Enabled != nil && !*rule.Enabled {
 				// Remove from slice
-				rules.Groups[i].Rules = append(group.Rules[:j], group.Rules[j+1:]...)
+				ruleIdx := j - removedRules
+				rules.Groups[i].Rules = append(group.Rules[:ruleIdx], group.Rules[ruleIdx+1:]...)
+				removedRules++
 			} else {
 				group.Rules[j].Enabled = nil
 				group.Rules[j].OverrideRules = nil
 			}
+		}
+	}
+
+	// Go over it again and remove any empty groups
+	var removedGroups int
+	for i, group := range rules.Groups {
+		if len(group.Rules) == 0 {
+			groupIdx := i - removedGroups
+			rules.Groups = append(rules.Groups[:groupIdx], rules.Groups[groupIdx+1:]...)
+			removedGroups++
 		}
 	}
 
@@ -55,6 +68,8 @@ func (rules *AlertFile) Exporter() string {
 	return string(d)
 }
 
+// Override applies the overrides defined in overrideRule to all the rules it overrides.
+// It is called on the *overriding* rule, and mutates the *overridden* rule(s).
 func (alertFile AlertFile) Override(overrideRule Rule) {
 	for i, group := range alertFile.Groups {
 		for j, rule := range group.Rules {
@@ -67,8 +82,16 @@ func (alertFile AlertFile) Override(overrideRule Rule) {
 			for _, override := range overrideRule.OverrideRules {
 				matched, _ := regexp.MatchString("\\b"+override+"\\b", rule.AlertName)
 				if matched {
-					negatedFilter := NegateFilterExpression(overrideRule.Expr)
-					alertFile.Groups[i].Rules[j].Expr = AppendFilters(negatedFilter, rule.Expr)
+					// Special case: if the override has `enabled: false` with no expr at all,
+					// or an identical expression to the base, we want to completely disable the rule.
+					if (overrideRule.Expr == "" || overrideRule.Expr == alertFile.Groups[i].Rules[j].Expr) &&
+						overrideRule.Enabled != nil &&
+						!*overrideRule.Enabled {
+						alertFile.Groups[i].Rules[j].Enabled = new(bool)
+					} else {
+						negatedFilter := NegateFilterExpression(overrideRule.Expr)
+						alertFile.Groups[i].Rules[j].Expr = AppendFilters(negatedFilter, rule.Expr)
+					}
 					break
 				}
 			}
@@ -160,17 +183,16 @@ func getFilePaths(globs []string) []string {
 	return filePaths
 }
 
-func loadAlertFile(filePath string) *AlertFile {
+func loadAlertFile(filePath string) (*AlertFile, error) {
 	input, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		fmt.Errorf("Failed to read file " + filePath)
-		return nil
+		return nil, fmt.Errorf("failed to read file " + filePath)
 	}
 	alertFile, err := LoadRules(input)
 	if err != nil || len(alertFile.Groups) == 0 {
-		return nil
+		return nil, fmt.Errorf("failed to load file "+filePath+": %w", err)
 	}
-	return alertFile
+	return alertFile, nil
 }
 
 func main() {
@@ -184,10 +206,11 @@ func main() {
 	var alertFiles []AlertFile
 
 	for _, file := range files {
-		alertFile := loadAlertFile(file)
-		if alertFile != nil {
-			alertFiles = append(alertFiles, *alertFile)
+		alertFile, err := loadAlertFile(file)
+		if err != nil {
+			panic(err)
 		}
+		alertFiles = append(alertFiles, *alertFile)
 	}
 
 	var alertFile AlertFile = AlertFile{}
