@@ -153,10 +153,10 @@ func NegateFilterExpression(input string) string {
 			exprFilterBodyElements[i] = strings.Replace(elem, "!=", "=", 1)
 		} else if containsOperator("!~", elem) {
 			exprFilterBodyElements[i] = strings.Replace(elem, "!~", "~", 1)
-		} else if containsOperator("=", elem) {
-			exprFilterBodyElements[i] = strings.Replace(elem, "=", "!=", 1)
 		} else if containsOperator("=~", elem) {
 			exprFilterBodyElements[i] = strings.Replace(elem, "=~", "!~", 1)
+		} else if containsOperator("=", elem) {
+			exprFilterBodyElements[i] = strings.Replace(elem, "=", "!=", 1)
 		}
 	}
 
